@@ -3,6 +3,7 @@ import { useMemo, useRef, useEffect } from 'react';
 import { useChartStore } from '../store/chartStore';
 import { drawChartToCanvas } from '../utils/canvas';
 import { calcYarnUsage } from '../utils/yarnCalc';
+import { normalizeYarnCode, getDuplicateYarnCodes, countMissingYarnCodes } from '../utils/palette';
 
 const ROWS_PER_PAGE = 40;
 const CELL_SIZE = 16;
@@ -12,6 +13,8 @@ export default function Print() {
   const charts = useChartStore((s) => s.charts);
   const chart = charts.find((c) => c.id === id);
   const usage = useMemo(() => (chart ? calcYarnUsage(chart) : []), [chart]);
+  const duplicateCodes = useMemo(() => (chart ? getDuplicateYarnCodes(chart.palette) : new Set<string>()), [chart]);
+  const missingCount = useMemo(() => (chart ? countMissingYarnCodes(chart.palette) : 0), [chart]);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
   const pages = useMemo(() => {
@@ -52,15 +55,47 @@ export default function Print() {
         </p>
 
         <div style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>图例</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {usage.map((u) => (
-              <div key={u.paletteId} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <div style={{ width: 16, height: 16, background: u.hex, border: '1px solid #ddd' }} />
-                <span>{u.colorName} ({u.cells}格, {u.percentage}%)</span>
-              </div>
-            ))}
-          </div>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+            图例
+            {missingCount > 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>（{missingCount} 项缺线号）</span>}
+          </h3>
+          <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #e0dcd5' }}>
+                <th style={{ textAlign: 'left', padding: '4px' }}>色</th>
+                <th style={{ textAlign: 'left', padding: '4px' }}>线号</th>
+                <th style={{ textAlign: 'left', padding: '4px' }}>名称</th>
+                <th style={{ textAlign: 'left', padding: '4px' }}>品牌</th>
+                <th style={{ textAlign: 'left', padding: '4px' }}>缸号</th>
+                <th style={{ textAlign: 'right', padding: '4px' }}>库存(团)</th>
+                <th style={{ textAlign: 'right', padding: '4px' }}>格数</th>
+                <th style={{ textAlign: 'right', padding: '4px' }}>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usage.map((u) => {
+                const missing = !normalizeYarnCode(u.yarnCode);
+                const duplicated = duplicateCodes.has(normalizeYarnCode(u.yarnCode));
+                return (
+                  <tr key={u.paletteId} style={{ borderBottom: '1px solid #f0eeea' }}>
+                    <td style={{ padding: '4px' }}>
+                      <div style={{ width: 14, height: 14, background: u.hex, border: '1px solid #ddd' }} />
+                    </td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: missing ? '#c0392b' : duplicated ? '#d35400' : '#333', whiteSpace: 'nowrap' }}>
+                      {missing ? '缺线号' : u.yarnCode}
+                      {duplicated && <span title="线号重复" style={{ marginLeft: 2 }}>⚠</span>}
+                    </td>
+                    <td style={{ padding: '4px' }}>{u.colorName}</td>
+                    <td style={{ padding: '4px', color: '#666' }}>{u.brand || '—'}</td>
+                    <td style={{ padding: '4px', color: '#666' }}>{u.dyeLot || '—'}</td>
+                    <td style={{ textAlign: 'right', padding: '4px' }}>{u.stockSkeins || 0}</td>
+                    <td style={{ textAlign: 'right', padding: '4px' }}>{u.cells}</td>
+                    <td style={{ textAlign: 'right', padding: '4px' }}>{u.percentage}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         <div style={{ marginBottom: 16 }}>
@@ -69,18 +104,27 @@ export default function Print() {
             <thead>
               <tr style={{ borderBottom: '1px solid #e0dcd5' }}>
                 <th style={{ textAlign: 'left', padding: '4px' }}>颜色</th>
+                <th style={{ textAlign: 'left', padding: '4px' }}>线号</th>
                 <th style={{ textAlign: 'right', padding: '4px' }}>米数</th>
                 <th style={{ textAlign: 'right', padding: '4px' }}>建议团数(+15%)</th>
               </tr>
             </thead>
             <tbody>
-              {usage.map((u) => (
-                <tr key={u.paletteId} style={{ borderBottom: '1px solid #f0eeea' }}>
-                  <td style={{ padding: '4px' }}>{u.colorName}</td>
-                  <td style={{ textAlign: 'right', padding: '4px' }}>{u.meters}m</td>
-                  <td style={{ textAlign: 'right', padding: '4px' }}>{Math.ceil(u.skeins * 1.15 * 10) / 10}</td>
-                </tr>
-              ))}
+              {usage.map((u) => {
+                const missing = !normalizeYarnCode(u.yarnCode);
+                const duplicated = duplicateCodes.has(normalizeYarnCode(u.yarnCode));
+                return (
+                  <tr key={u.paletteId} style={{ borderBottom: '1px solid #f0eeea' }}>
+                    <td style={{ padding: '4px' }}>{u.colorName}</td>
+                    <td style={{ padding: '4px', fontWeight: 600, color: missing ? '#c0392b' : duplicated ? '#d35400' : '#333', whiteSpace: 'nowrap' }}>
+                      {missing ? '缺线号' : u.yarnCode}
+                      {duplicated && <span title="线号重复" style={{ marginLeft: 2 }}>⚠</span>}
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '4px' }}>{u.meters}m</td>
+                    <td style={{ textAlign: 'right', padding: '4px' }}>{Math.ceil(u.skeins * 1.15 * 10) / 10}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

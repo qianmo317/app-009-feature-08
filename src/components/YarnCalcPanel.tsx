@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { useChartStore } from '../store/chartStore';
 import { calcYarnUsage } from '../utils/yarnCalc';
+import { normalizeYarnCode, getDuplicateYarnCodes } from '../utils/palette';
 
 export default function YarnCalcPanel() {
   const chart = useChartStore((s) => s.getCurrentChart());
   const updateChart = useChartStore((s) => s.updateChart);
   const usage = useMemo(() => (chart ? calcYarnUsage(chart) : []), [chart]);
+  const duplicateCodes = useMemo(() => (chart ? getDuplicateYarnCodes(chart.palette) : new Set<string>()), [chart]);
 
   if (!chart) return null;
 
@@ -54,21 +56,30 @@ export default function YarnCalcPanel() {
         <thead>
           <tr style={{ borderBottom: '1px solid #e0dcd5' }}>
             <th style={{ textAlign: 'left', padding: '2px 4px' }}>颜色</th>
+            <th style={{ textAlign: 'left', padding: '2px 4px' }}>线号</th>
             <th style={{ textAlign: 'right', padding: '2px 4px' }}>米数</th>
             <th style={{ textAlign: 'right', padding: '2px 4px' }}>建议团数</th>
           </tr>
         </thead>
         <tbody>
-          {usage.map((u) => (
-            <tr key={u.paletteId} style={{ borderBottom: '1px solid #f0eeea' }}>
-              <td style={{ padding: '2px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 10, height: 10, background: u.hex, border: '1px solid #ddd' }} />
-                {u.colorName}
-              </td>
-              <td style={{ textAlign: 'right', padding: '2px 4px' }}>{u.meters}m</td>
-              <td style={{ textAlign: 'right', padding: '2px 4px' }}>{Math.ceil(u.skeins * 1.15 * 10) / 10}</td>
-            </tr>
-          ))}
+          {usage.map((u) => {
+            const missing = !normalizeYarnCode(u.yarnCode);
+            const duplicated = duplicateCodes.has(normalizeYarnCode(u.yarnCode));
+            return (
+              <tr key={u.paletteId} style={{ borderBottom: '1px solid #f0eeea' }}>
+                <td style={{ padding: '2px 4px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 10, height: 10, background: u.hex, border: '1px solid #ddd' }} />
+                  {u.colorName}
+                </td>
+                <td style={{ padding: '2px 4px', color: missing ? '#c0392b' : duplicated ? '#d35400' : '#333', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {missing ? '缺线号' : u.yarnCode}
+                  {duplicated && <span title="线号重复" style={{ marginLeft: 2 }}>⚠</span>}
+                </td>
+                <td style={{ textAlign: 'right', padding: '2px 4px' }}>{u.meters}m</td>
+                <td style={{ textAlign: 'right', padding: '2px 4px' }}>{Math.ceil(u.skeins * 1.15 * 10) / 10}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -2,7 +2,14 @@ export type Palette = {
   id: string;
   name: string;
   hex: string;
+  /** 线号（色号），如 DMC 310 */
   yarnCode?: string;
+  /** 缸号（染色批号） */
+  dyeLot?: string;
+  /** 毛线品牌 */
+  brand?: string;
+  /** 手头剩余团数 */
+  stockSkeins?: number;
 };
 
 export type Chart = {
@@ -35,6 +42,10 @@ export type YarnUsage = {
   paletteId: string;
   colorName: string;
   hex: string;
+  yarnCode: string;
+  dyeLot: string;
+  brand: string;
+  stockSkeins: number;
   cells: number;
   percentage: number;
   meters: number;
