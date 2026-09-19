@@ -2,7 +2,10 @@ export type Palette = {
   id: string;
   name: string;
   hex: string;
-  yarnCode?: string;
+  yarnCode?: string; // 线号
+  dyeLot?: string; // 缸号
+  brand?: string; // 品牌
+  skeinsOnHand?: number; // 手头还剩几团
 };
 
 export type Chart = {
@@ -35,6 +38,10 @@ export type YarnUsage = {
   paletteId: string;
   colorName: string;
   hex: string;
+  yarnCode?: string;
+  dyeLot?: string;
+  brand?: string;
+  skeinsOnHand?: number;
   cells: number;
   percentage: number;
   meters: number;

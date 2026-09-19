@@ -6,7 +6,7 @@ import ExportPanel from './ExportPanel';
 
 export default function RightPanel() {
   return (
-    <div style={{ width: 240, background: '#fff', borderLeft: '1px solid #e0dcd5', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: 260, background: '#fff', borderLeft: '1px solid #e0dcd5', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
       <PalettePanel />
       <LegendPanel />
       <YarnCalcPanel />
